@@ -59,7 +59,7 @@ where
     type Output = Expr;
     type Error = ParseError;
 
-    fn affix(
+    fn query_affix(
         &mut self,
         token: &Self::Input,
         mode: ParseMode,
