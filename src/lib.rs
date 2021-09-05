@@ -1,146 +1,146 @@
-/// This crate provides a high-level interface for implementing Pratt parsers in Rust.
-///
-/// > In computer science, a Pratt parser is an improved recursive descent parser that
-/// > associates semantics with tokens instead of grammar rules.
-/// * https://en.wikipedia.org/wiki/Pratt_parser
-///
-/// In other words, you can use a Pratt parser to parse expressions that might contain *unary* and
-/// *binary* operators of varying *precedence* and *associativity*.
-///
-/// The documentation provides some simple examples. See the `examples` folder in the
-/// repository for more in-depth use cases.
-///
-/// # Example: simple arithmetic
-///
-/// We will use [logos](https://docs.rs/logos/0.12.0/logos/) to tokenize the input expression, then
-/// use a Pratt parser to convert it into an expression tree.
-///
-/// ```rust
-/// use logos::Logos;
-/// use new_pratt::*;
-/// use std::iter::Peekable;
-///
-/// #[derive(Debug, PartialEq)]
-/// enum Expr {
-///     Number(i32),
-///     Binary(Box<Expr>, BinaryOperator, Box<Expr>),
-///     Prefix(UnaryOperator, Box<Expr>),
-///     Postfix(Box<Expr>, UnaryOperator)
-/// }
-///
-/// #[derive(Debug, PartialEq)]
-/// enum BinaryOperator {
-///     Add,
-///     Sub,
-///     Mul,
-///     Div,
-///     Pow,
-/// }
-///
-/// #[derive(Debug, PartialEq)]
-/// enum UnaryOperator {
-///     // Negation
-///     Neg,
-///     // Factorial
-///     Fac,
-/// }
-///
-/// #[derive(Logos, Debug, PartialEq)]
-/// enum Token {
-///     #[token("+")]
-///     Plus,
-///     #[token("-")]
-///     Minus,
-///     #[token("*")]
-///     Star,
-///     #[token("/")]
-///     Slash,
-///     #[token("^")]
-///     Caret,
-///     #[token("!")]
-///     Bang,
-///
-///     #[regex(r"\d+", |lex| lex.slice().parse())]
-///     Number(i32),
-///
-///     #[error]
-///     #[regex(r"[ \t\r\n]+", logos::skip)]
-///     Error,
-/// }
-///
-/// fn tokenize(input: &str) -> impl Iterator<Item = Token> {
-///     Token::lexer(input)
-/// }
-///
-/// struct Parser;
-///
-/// impl<I> PrattParser<I> for Parser
-/// where
-///     I: Iterator<Item = Token>,
-/// {
-///     type Input = Token;
-///     type Output = Expr;
-///     type Error = PrattError<Self::Input>;
-///
-///     fn query_affix(&mut self, token: &Self::Input, mode: ParseMode) -> Result<Option<Affix>, Self::Error> {
-///         let ret = match token {
-///             // Differentiate between unary negation and binary subtraction. If the parser
-///             // is prepared to accept prefix tokens, parse '-' as negation.
-///             Token::Minus if mode.prefix() => Some(Affix::Prefix(Precedence(5))),
-///             Token::Plus | Token::Minus => Some(Affix::Infix(Precedence(2), Associativity::Left)),
-///             Token::Star | Token::Slash => Some(Affix::Infix(Precedence(3), Associativity::Left)),
-///             Token::Caret => Some(Affix::Infix(Precedence(4), Associativity::Right)),
-///             Token::Bang => Some(Affix::Postfix(Precedence(6))),
-///             Token::Number(_) => Some(Affix::Nilfix),
-///             _ => panic!("unexpected token: {:?}", token),
-///         };
-///         Ok(ret)
-///     }
-///
-///     fn nilfix(&mut self, token: Self::Input, _: &mut Peekable<&mut I>) -> Result<Self::Output, Self::Error> {
-///         match token {
-///             Token::Number(x) => Ok(Expr::Number(x)),
-///             _ => unreachable!(),
-///         }
-///     }
-///
-///     fn prefix(&mut self, op: Self::Input, rhs: Self::Output, _: &mut Peekable<&mut I>) -> Result<Self::Output, Self::Error> {
-///         let op = match op {
-///             Token::Minus => UnaryOperator::Neg,
-///             _ => unreachable!(),
-///         };
-///         Ok(Expr::Prefix(op, Box::new(rhs)))
-///     }
-///
-///     fn postfix(&mut self, lhs: Self::Output, op: Self::Input, _: &mut Peekable<&mut I>) -> Result<Self::Output, Self::Error> {
-///         let op = match op {
-///             Token::Bang => UnaryOperator::Fac,
-///             _ => unreachable!(),
-///         };
-///         Ok(Expr::Postfix(Box::new(lhs), op))
-///     }
-///
-///     fn infix(&mut self, lhs: Self::Output, op: Self::Input, rhs: Self::Output, _: &mut Peekable<&mut I>) -> Result<Self::Output, Self::Error> {
-///         let op = match op {
-///             Token::Plus => BinaryOperator::Add,
-///             Token::Minus => BinaryOperator::Sub,
-///             Token::Star => BinaryOperator::Mul,
-///             Token::Slash => BinaryOperator::Div,
-///             Token::Caret => BinaryOperator::Pow,
-///             _ => unreachable!(),
-///         };
-///         Ok(Expr::Binary(Box::new(lhs), op, Box::new(rhs)))
-///     }
-///
-///     fn custom(&mut self, lhs: Option<Self::Output>, token: Self::Input, rhs: Option<Self::Output>, input: &mut Peekable<&mut I>) -> Result<Self::Output, Self::Error> {
-///         unreachable!()
-///     }
-/// }
-///
-/// fn parse(input: &str) -> Result<Expr, PrattError<Token>> {
-///     Parser.parse(&mut tokenize(input))
-/// }
-/// ```
+//! This crate provides a high-level interface for implementing Pratt parsers in Rust.
+//!
+//! > In computer science, a Pratt parser is an improved recursive descent parser that
+//! > associates semantics with tokens instead of grammar rules.
+//! * <https://en.wikipedia.org/wiki/Pratt_parser>
+//!
+//! In other words, you can use a Pratt parser to parse expressions that might contain *unary* and
+//! *binary* operators of varying *precedence* and *associativity*.
+//!
+//! The documentation provides some simple examples. See the `examples` folder in the
+//! repository for more in-depth use cases.
+//!
+//! # Example: simple arithmetic
+//!
+//! We will use [logos](https://docs.rs/logos/0.12.0/logos/) to tokenize the input expression, then
+//! use a Pratt parser to convert it into an expression tree.
+//!
+//! ```rust
+//! use logos::Logos;
+//! use new_pratt::*;
+//! use std::iter::Peekable;
+//!
+//! #[derive(Debug, PartialEq)]
+//! enum Expr {
+//!     Number(i32),
+//!     Binary(Box<Expr>, BinaryOperator, Box<Expr>),
+//!     Prefix(UnaryOperator, Box<Expr>),
+//!     Postfix(Box<Expr>, UnaryOperator)
+//! }
+//!
+//! #[derive(Debug, PartialEq)]
+//! enum BinaryOperator {
+//!     Add,
+//!     Sub,
+//!     Mul,
+//!     Div,
+//!     Pow,
+//! }
+//!
+//! #[derive(Debug, PartialEq)]
+//! enum UnaryOperator {
+//!     // Negation
+//!     Neg,
+//!     // Factorial
+//!     Fac,
+//! }
+//!
+//! #[derive(Logos, Debug, PartialEq)]
+//! enum Token {
+//!     #[token("+")]
+//!     Plus,
+//!     #[token("-")]
+//!     Minus,
+//!     #[token("*")]
+//!     Star,
+//!     #[token("/")]
+//!     Slash,
+//!     #[token("^")]
+//!     Caret,
+//!     #[token("!")]
+//!     Bang,
+//!
+//!     #[regex(r"\d+", |lex| lex.slice().parse())]
+//!     Number(i32),
+//!
+//!     #[error]
+//!     #[regex(r"[ \t\r\n]+", logos::skip)]
+//!     Error,
+//! }
+//!
+//! fn tokenize(input: &str) -> impl Iterator<Item = Token> {
+//!     Token::lexer(input)
+//! }
+//!
+//! struct Parser;
+//!
+//! impl<I> PrattParser<I> for Parser
+//! where
+//!     I: Iterator<Item = Token>,
+//! {
+//!     type Input = Token;
+//!     type Output = Expr;
+//!     type Error = PrattError<Self::Input>;
+//!
+//!     fn query_affix(&mut self, token: &Self::Input, mode: ParseMode) -> Result<Option<Affix>, Self::Error> {
+//!         let ret = match token {
+//!             // Differentiate between unary negation and binary subtraction. If the parser
+//!             // is prepared to accept prefix tokens, parse '-' as negation.
+//!             Token::Minus if mode.prefix() => Some(Affix::Prefix(Precedence(5))),
+//!             Token::Plus | Token::Minus => Some(Affix::Infix(Precedence(2), Associativity::Left)),
+//!             Token::Star | Token::Slash => Some(Affix::Infix(Precedence(3), Associativity::Left)),
+//!             Token::Caret => Some(Affix::Infix(Precedence(4), Associativity::Right)),
+//!             Token::Bang => Some(Affix::Postfix(Precedence(6))),
+//!             Token::Number(_) => Some(Affix::Nilfix),
+//!             _ => panic!("unexpected token: {:?}", token),
+//!         };
+//!         Ok(ret)
+//!     }
+//!
+//!     fn nilfix(&mut self, token: Self::Input, _: &mut Peekable<&mut I>) -> Result<Self::Output, Self::Error> {
+//!         match token {
+//!             Token::Number(x) => Ok(Expr::Number(x)),
+//!             _ => unreachable!(),
+//!         }
+//!     }
+//!
+//!     fn prefix(&mut self, op: Self::Input, rhs: Self::Output, _: &mut Peekable<&mut I>) -> Result<Self::Output, Self::Error> {
+//!         let op = match op {
+//!             Token::Minus => UnaryOperator::Neg,
+//!             _ => unreachable!(),
+//!         };
+//!         Ok(Expr::Prefix(op, Box::new(rhs)))
+//!     }
+//!
+//!     fn postfix(&mut self, lhs: Self::Output, op: Self::Input, _: &mut Peekable<&mut I>) -> Result<Self::Output, Self::Error> {
+//!         let op = match op {
+//!             Token::Bang => UnaryOperator::Fac,
+//!             _ => unreachable!(),
+//!         };
+//!         Ok(Expr::Postfix(Box::new(lhs), op))
+//!     }
+//!
+//!     fn infix(&mut self, lhs: Self::Output, op: Self::Input, rhs: Self::Output, _: &mut Peekable<&mut I>) -> Result<Self::Output, Self::Error> {
+//!         let op = match op {
+//!             Token::Plus => BinaryOperator::Add,
+//!             Token::Minus => BinaryOperator::Sub,
+//!             Token::Star => BinaryOperator::Mul,
+//!             Token::Slash => BinaryOperator::Div,
+//!             Token::Caret => BinaryOperator::Pow,
+//!             _ => unreachable!(),
+//!         };
+//!         Ok(Expr::Binary(Box::new(lhs), op, Box::new(rhs)))
+//!     }
+//!
+//!     fn custom(&mut self, lhs: Option<Self::Output>, token: Self::Input, rhs: Option<Self::Output>, input: &mut Peekable<&mut I>) -> Result<Self::Output, Self::Error> {
+//!         unreachable!()
+//!     }
+//! }
+//!
+//! fn parse(input: &str) -> Result<Expr, PrattError<Token>> {
+//!     Parser.parse(&mut tokenize(input))
+//! }
+//! ```
 
 use std::fmt;
 use std::iter::Peekable;
@@ -302,7 +302,6 @@ where
     /// the current state of the parser.
     ///
     /// See the examples for more information.
-    /// ```
     fn query_affix(&mut self, token: &Self::Input, mode: ParseMode) -> Result<Option<Affix>, Self::Error>;
 
     /// Converts a nilfix (primary) token into an output and returns it.
